@@ -1,0 +1,26 @@
+version: '3.8'
+services:
+  backend:
+    build: ./backend
+    container_name: weather-backend
+    ports:
+      - "8000:8000"
+    environment:
+      # Add any API keys for data sources here, e.g. NASA_API_KEY
+      # NASA_API_KEY: "${NASA_API_KEY}"
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    container_name: weather-frontend
+    ports:
+      - "80:80"
+    environment:
+      VITE_API_URL: http://backend:8000   # Backend URL inside the compose network
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+networks:
+  default:
+    name: weather-app-network
