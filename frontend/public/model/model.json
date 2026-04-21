@@ -1,0 +1,133 @@
+{
+  "modelTopology": {
+    "node": [
+      {
+        "op": "input",
+        "name": "input_1",
+        "input": [],
+        "attr": {
+          "dtype": {
+            "type": "DT_FLOAT",
+            "value": {}
+          },
+          "shape": {
+            "type": "DT_SHAPE",
+            "value": {
+              "dim": [
+                {
+                  "size": -1
+                },
+                {
+                  "size": 4
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "op": "Dense",
+        "name": "dense",
+        "input": [
+          "input_1:0"
+        ],
+        "attr": {
+          "T": {
+            "type": "DT_FLOAT",
+            "value": {}
+          },
+          "units": {
+            "type": "DT_INT32",
+            "value": 8
+          },
+          "activation": {
+            "type": "DT_STRING",
+            "value": "relu"
+          },
+          "use_bias": {
+            "type": "DT_BOOL",
+            "value": true
+          }
+        }
+      },
+      {
+        "op": "Dense",
+        "name": "dense_1",
+        "input": [
+          "dense:0"
+        ],
+        "attr": {
+          "T": {
+            "type": "DT_FLOAT",
+            "value": {}
+          },
+          "units": {
+            "type": "DT_INT32",
+            "value": 1
+          },
+          "activation": {
+            "type": "DT_STRING",
+            "value": "linear"
+          },
+          "use_bias": {
+            "type": "DT_BOOL",
+            "value": true
+          }
+        }
+      }
+    ],
+    "inputs": [
+      [
+        "input_1:0"
+      ]
+    ],
+    "outputs": [
+      [
+        "dense_1:0",
+        0
+      ]
+    ]
+  },
+  "weightsManifest": [
+    {
+      "paths": [
+        "group1-shard1of1"
+      ],
+      "weights": [
+        {
+          "name": "dense/kernel",
+          "shape": [
+            4,
+            8
+          ],
+          "dtype": "float32"
+        },
+        {
+          "name": "dense/bias",
+          "shape": [
+            8
+          ],
+          "dtype": "float32"
+        },
+        {
+          "name": "dense_1/kernel",
+          "shape": [
+            8,
+            1
+          ],
+          "dtype": "float32"
+        },
+        {
+          "name": "dense_1/bias",
+          "shape": [
+            1
+          ],
+          "dtype": "float32"
+        }
+      ]
+    }
+  ],
+  "format": "layers-model",
+  "generatedBy": "TensorFlow.js v4.22.0",
+  "convertedBy": "TensorFlow.js Converter v4.22.0"
+}

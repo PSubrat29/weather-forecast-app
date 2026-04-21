@@ -4,12 +4,9 @@ import asyncio
 
 app = FastAPI()
 
-# URLs for the selected weather data sources (placeholder endpoints)
+# URLs for the selected weather data sources (using free Open-Meteo API)
 DATA_SOURCES = {
-    "nasa": "https://api.nasa.gov/planetary/weather",  # replace with real NASA endpoint & key
-    "imd": "https://api.imd.gov.in/v1/weather",       # replace with real IMD endpoint & key
-    "jaxa": "https://api.jaxa.jp/v1/weather",       # replace with real JAXA endpoint & key
-    "noaa": "https://www.noaa.gov/api/weather"      # replace with real NOAA endpoint & key
+    "openmeteo": "https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&current_weather=true",
 }
 
 async def fetch(source_url: str) -> dict:

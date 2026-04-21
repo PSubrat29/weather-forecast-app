@@ -39,7 +39,7 @@ weather-forecast-app/
    The dev server proxies `/weather` calls to the FastAPI backend.
 
 ## Next steps
-- Replace the placeholder data‑source URLs in `backend/main.py` with real API endpoints and add any required authentication keys.
+- The backend currently uses the free Open-Meteo API (no key required). You can change the latitude/longitude or add more sources in `backend/main.py`.
 - Host a trained TensorFlow.js model and update the URL in `Weather.vue` (`tf.loadLayersModel`).
 - Extend the UI to visualise predictions.
 

@@ -19,12 +19,13 @@ const error = ref(null);
 const weatherData = ref(null);
 const prediction = ref(null);
 
-// Placeholder model loading – replace URL with actual model.json when ready
+// Load our locally hosted model
 let model = null;
 async function loadModel() {
   if (!model) {
     try {
-      model = await tf.loadLayersModel('https://example.com/path/to/model.json');
+      // Load model from our public directory
+      model = await tf.loadLayersModel('/model/model.json');
     } catch (e) {
       console.warn('Failed to load model, using dummy prediction');
     }
@@ -42,14 +43,12 @@ async function loadData() {
     const resp = await axios.get(endpoint);
     weatherData.value = resp.data;
     await loadModel();
-    // Dummy preprocessing – flatten JSON values into a tensor
-    const flat = Object.values(resp.data)
-      .map(v => typeof v === 'object' ? JSON.stringify(v) : v)
-      .join(' ');
-    const inputTensor = tf.tensor([flat.length]); // placeholder scalar tensor
+    // Extract numerical features from weather data for model input
+    const features = extractFeatures(resp.data);
+    const inputTensor = tf.tensor2d([features]); // [1, num_features] tensor
     if (model) {
       const pred = model.predict(inputTensor);
-      prediction.value = pred.arraySync();
+      prediction.value = Array.isArray(pred.arraySync()) ? pred.arraySync()[0] : pred.arraySync();
     } else {
       prediction.value = 'No model loaded – placeholder result';
     }
@@ -58,6 +57,46 @@ async function loadData() {
   } finally {
     loading.value = false;
   }
+}
+
+// Extract numerical features from weather data for model input
+function extractFeatures(data) {
+  // For Open-Meteo API response, extract key numerical values
+  const features = [];
+
+  // Handle Open-Meteo response structure
+  if (data.openmeteo && data.openmeteo.current_weather) {
+    const weather = data.openmeteo.current_weather;
+    features.push(weather.temperature || 0);           // temperature
+    features.push(weather.windspeed || 0);             // windspeed
+    features.push(weather.winddirection || 0);         // winddirection
+    features.push(weather.is_day || 0);                // is_day
+    features.push(weather.weathercode || 0);           // weathercode
+  } else {
+    // Fallback: extract any numerical values we can find
+    function extractNumerical(obj, arr) {
+      for (const key in obj) {
+        if (obj.hasOwnProperty(key)) {
+          const value = obj[key];
+          if (typeof value === 'number' && !isNaN(value)) {
+            arr.push(value);
+          } else if (typeof value === 'object' && value !== null) {
+            extractNumerical(value, arr);
+          }
+        }
+      }
+    }
+    extractNumerical(data, features);
+
+    // Ensure we have at least 4 features for our model
+    while (features.length < 4) {
+      features.push(0);
+    }
+    // Limit to first 4 features to match model input shape
+    features.splice(4);
+  }
+
+  return features;
 }
 </script>
 
