@@ -1,13 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(\".venv\\\\Scripts\\\\python.exe\" -m uvicorn main:app --reload --port 8000)",
-      "Bash(timeout 5 bash -c 'while ! nc -z localhost 8000; do sleep 0.1; done; echo \"Backend is up\"')",
-      "Bash(node *)",
-      "Bash(D:\\\\ParidaUser\\\\Claude-Project\\\\weather-forecast-app\\\\backend\\\\.venv\\\\Scripts\\\\python.exe *)",
-      "Bash(\"/c/Program Files/nodejs/npm.cmd\" run build)",
-      "Bash(.venv\\\\Scripts\\\\python.exe -c \"import urllib.request, json; try: response = urllib.request.urlopen\\('http://127.0.0.1:8000/weather'\\); data = json.load\\(response\\); print\\('Backend is running:', data.get\\('openmeteo', {}\\).get\\('current_weather', {}\\).get\\('temperature'\\)\\); except Exception as e: print\\('Backend not running or error:', e\\)\")",
-      "Bash(\".venv\\\\Scripts\\\\python.exe\" -c \"import urllib.request, json; try: response = urllib.request.urlopen\\('http://127.0.0.1:8000/weather'\\); data = json.load\\(response\\); print\\('Backend is running:', data.get\\('openmeteo', {}\\).get\\('current_weather', {}\\).get\\('temperature'\\)\\); except Exception as e: print\\('Backend not running or error:', e\\)\")"
+      "Bash(git checkout *)"
     ]
   }
 }
