@@ -37,8 +37,8 @@ export async function fetchForecast(latitude, longitude) {
   const coords = { latitude: String(latitude), longitude: String(longitude) };
   if (API_BASE) {
     try {
-      // Backend may sleep on free hosting tiers; allow a long cold start.
-      const data = await getJson(`${API_BASE}/weather?${qs(coords)}`, 60000);
+      // Free hosting tiers sleep when idle; don't make users wait for a cold start.
+      const data = await getJson(`${API_BASE}/weather?${qs(coords)}`, 10000);
       if (data && data.current && data.hourly && data.daily) return data;
       throw new Error('unexpected response format');
     } catch (e) {

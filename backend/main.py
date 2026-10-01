@@ -1,6 +1,5 @@
 """FastAPI backend that proxies the free Open-Meteo forecast API (no API key required)."""
 
-import asyncio
 import os
 import time
 
@@ -25,6 +24,8 @@ FORECAST_PARAMS = {
 # Cache responses per location so repeated page loads don't hit the upstream API.
 CACHE_TTL_SECONDS = int(os.getenv("CACHE_TTL_SECONDS", "600"))
 _cache: dict[tuple[float, float], tuple[float, dict]] = {}
+# After a 429, stop calling Open-Meteo until this monotonic time so we don't prolong the block.
+_rate_limited_until = 0.0
 
 app = FastAPI(title="Weather Forecast API")
 
@@ -49,6 +50,16 @@ async def health():
     return {"status": "ok", "commit": os.getenv("RENDER_GIT_COMMIT", "local")[:7]}
 
 
+def _stale_or_503(cached, retry_after: float):
+    if cached:
+        return cached[1]  # stale data beats no data
+    raise HTTPException(
+        status_code=503,
+        detail="Upstream weather service is rate limiting; try again shortly",
+        headers={"Retry-After": str(int(retry_after) + 1)},
+    )
+
+
 @app.get("/weather")
 async def weather(
     latitude: float = Query(52.52, ge=-90, le=90),
@@ -60,20 +71,24 @@ async def weather(
     if cached and time.monotonic() - cached[0] < CACHE_TTL_SECONDS:
         return cached[1]
 
+    global _rate_limited_until
+    now = time.monotonic()
+    if now < _rate_limited_until:
+        return _stale_or_503(cached, _rate_limited_until - now)
+
     params = {"latitude": key[0], "longitude": key[1], **FORECAST_PARAMS}
     try:
         async with httpx.AsyncClient(timeout=15) as client:
-            for attempt in range(3):
-                resp = await client.get(OPEN_METEO_URL, params=params)
-                if resp.status_code != 429 or attempt == 2:
-                    break
-                await asyncio.sleep(1 + attempt)
-            if resp.status_code == 429:
-                if cached:
-                    return cached[1]  # stale data beats no data
-                raise HTTPException(status_code=503, detail="Upstream weather service is rate limiting; try again shortly")
-            resp.raise_for_status()
-            data = resp.json()
+            resp = await client.get(OPEN_METEO_URL, params=params)
+        if resp.status_code == 429:
+            try:
+                retry_after = max(int(resp.headers.get("retry-after", "")), 1)
+            except ValueError:
+                retry_after = 60
+            _rate_limited_until = time.monotonic() + retry_after
+            return _stale_or_503(cached, retry_after)
+        resp.raise_for_status()
+        data = resp.json()
     except httpx.HTTPError as exc:
         if cached:
             return cached[1]

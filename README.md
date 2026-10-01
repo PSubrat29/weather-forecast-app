@@ -80,6 +80,7 @@ docker compose up --build
    - Language: `Python 3` (version pinned to 3.12 by `.python-version`)
    - Build Command: `pip install -r requirements.txt`
    - Start Command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+   - Health Check Path (under Advanced): `/health` — never `/weather`, which depends on Open-Meteo
    - Environment variable `ALLOWED_ORIGINS=https://psubrat29.github.io` (optional; default `*`)
 3. Deploy, then check `<render-url>/health` returns `{"status":"ok","commit":"<deployed commit>"}`.
 
@@ -87,7 +88,8 @@ The same build and start commands also work with Root Directory left empty: the 
 `requirements.txt` and `main.py` forward to `backend/`.
 
 Open-Meteo rate-limits shared IPs (common on Render's free tier). The backend caches each
-location for 10 minutes and the frontend falls back to Open-Meteo directly if the backend fails.
+location for 10 minutes, stops calling Open-Meteo for the `Retry-After` period after a 429, and
+the frontend falls back to Open-Meteo directly if the backend fails or takes over 10 seconds.
 
 ## Data
 Weather data by [Open-Meteo.com](https://open-meteo.com/), licensed CC BY 4.0.
