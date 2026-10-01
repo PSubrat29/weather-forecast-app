@@ -74,10 +74,20 @@ docker compose up --build
    e.g. `https://your-backend.onrender.com`.
 
 ### Backend → Render (optional)
-Create a Web Service from this repo with root directory `backend`, runtime Docker
-(or Python with build command `pip install -r requirements.txt` and start command
-`uvicorn main:app --host 0.0.0.0 --port $PORT`).
-Set `ALLOWED_ORIGINS=https://psubrat29.github.io` to restrict CORS (default `*`).
+1. Render → **New → Web Service** → connect `PSubrat29/weather-forecast-app`, branch `main`.
+2. Settings:
+   - Root Directory: `backend`
+   - Language: `Python 3` (version pinned to 3.12 by `.python-version`)
+   - Build Command: `pip install -r requirements.txt`
+   - Start Command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+   - Environment variable `ALLOWED_ORIGINS=https://psubrat29.github.io` (optional; default `*`)
+3. Deploy, then check `<render-url>/health` returns `{"status":"ok"}`.
+
+The same build and start commands also work with Root Directory left empty: the root
+`requirements.txt` and `main.py` forward to `backend/`.
+
+Open-Meteo rate-limits shared IPs (common on Render's free tier). The backend caches each
+location for 10 minutes and the frontend falls back to Open-Meteo directly if the backend fails.
 
 ## Data
 Weather data by [Open-Meteo.com](https://open-meteo.com/), licensed CC BY 4.0.

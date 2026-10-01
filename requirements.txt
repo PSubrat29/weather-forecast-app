@@ -1,0 +1,2 @@
+# Lets hosts that build from the repository root (e.g. Render without a Root Directory) install the backend.
+-r backend/requirements.txt
