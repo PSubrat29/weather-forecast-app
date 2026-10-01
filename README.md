@@ -81,7 +81,7 @@ docker compose up --build
    - Build Command: `pip install -r requirements.txt`
    - Start Command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
    - Environment variable `ALLOWED_ORIGINS=https://psubrat29.github.io` (optional; default `*`)
-3. Deploy, then check `<render-url>/health` returns `{"status":"ok"}`.
+3. Deploy, then check `<render-url>/health` returns `{"status":"ok","commit":"<deployed commit>"}`.
 
 The same build and start commands also work with Root Directory left empty: the root
 `requirements.txt` and `main.py` forward to `backend/`.

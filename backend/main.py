@@ -45,7 +45,8 @@ async def root():
 
 @app.get("/health")
 async def health():
-    return {"status": "ok"}
+    # RENDER_GIT_COMMIT is set by Render; shows which commit is actually running.
+    return {"status": "ok", "commit": os.getenv("RENDER_GIT_COMMIT", "local")[:7]}
 
 
 @app.get("/weather")
