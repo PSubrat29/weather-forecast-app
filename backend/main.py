@@ -1,6 +1,8 @@
 """FastAPI backend that proxies the free Open-Meteo forecast API (no API key required)."""
 
+import asyncio
 import os
+import time
 
 import httpx
 from fastapi import FastAPI, HTTPException, Query
@@ -18,6 +20,11 @@ FORECAST_PARAMS = {
     "forecast_days": 7,
     "timezone": "auto",
 }
+
+# Open-Meteo rate-limits per IP, and hosts like Render share IPs between many apps.
+# Cache responses per location so repeated page loads don't hit the upstream API.
+CACHE_TTL_SECONDS = int(os.getenv("CACHE_TTL_SECONDS", "600"))
+_cache: dict[tuple[float, float], tuple[float, dict]] = {}
 
 app = FastAPI(title="Weather Forecast API")
 
@@ -47,11 +54,31 @@ async def weather(
     longitude: float = Query(13.41, ge=-180, le=180),
 ):
     """Return the Open-Meteo forecast (current, hourly, daily) for the given coordinates."""
-    params = {"latitude": latitude, "longitude": longitude, **FORECAST_PARAMS}
+    key = (round(latitude, 2), round(longitude, 2))
+    cached = _cache.get(key)
+    if cached and time.monotonic() - cached[0] < CACHE_TTL_SECONDS:
+        return cached[1]
+
+    params = {"latitude": key[0], "longitude": key[1], **FORECAST_PARAMS}
     try:
         async with httpx.AsyncClient(timeout=15) as client:
-            resp = await client.get(OPEN_METEO_URL, params=params)
+            for attempt in range(3):
+                resp = await client.get(OPEN_METEO_URL, params=params)
+                if resp.status_code != 429 or attempt == 2:
+                    break
+                await asyncio.sleep(1 + attempt)
+            if resp.status_code == 429:
+                if cached:
+                    return cached[1]  # stale data beats no data
+                raise HTTPException(status_code=503, detail="Upstream weather service is rate limiting; try again shortly")
             resp.raise_for_status()
-            return resp.json()
+            data = resp.json()
     except httpx.HTTPError as exc:
+        if cached:
+            return cached[1]
         raise HTTPException(status_code=502, detail=f"Upstream weather service error: {exc}") from exc
+
+    _cache[key] = (time.monotonic(), data)
+    if len(_cache) > 500:
+        _cache.pop(next(iter(_cache)))
+    return data
