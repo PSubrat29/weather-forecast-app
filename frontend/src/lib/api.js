@@ -39,13 +39,14 @@ export async function fetchForecast(latitude, longitude) {
     try {
       // Free hosting tiers sleep when idle; don't make users wait for a cold start.
       const data = await getJson(`${API_BASE}/weather?${qs(coords)}`, 10000);
-      if (data && data.current && data.hourly && data.daily) return data;
+      if (data && data.current && data.hourly && data.daily) return { ...data, via: 'backend' };
       throw new Error('unexpected response format');
     } catch (e) {
       console.warn('Backend unavailable, falling back to Open-Meteo directly:', e.message);
     }
   }
-  return getJson(`${FORECAST_URL}?${qs({ ...coords, ...FORECAST_PARAMS })}`);
+  const data = await getJson(`${FORECAST_URL}?${qs({ ...coords, ...FORECAST_PARAMS })}`);
+  return { ...data, source: 'open-meteo', via: 'direct' };
 }
 
 export async function searchCities(name) {

@@ -21,7 +21,7 @@
       <div class="card current">
         <div>
           <h2>{{ place.label }}</h2>
-          <div class="muted">Updated {{ formatTime(data.current.time) }} (local time) · Source: <a :href="sourceInfo.url" target="_blank" rel="noopener">{{ sourceInfo.name }}</a></div>
+          <div class="muted">Updated {{ formatTime(data.current.time) }} (local time) · Source: <a :href="sourceInfo.url" target="_blank" rel="noopener">{{ sourceInfo.name }}</a> · {{ data.via === 'backend' ? 'via backend' : 'direct from browser' }}</div>
         </div>
         <div class="now">
           <span class="icon">{{ currentDesc.icon }}</span>
