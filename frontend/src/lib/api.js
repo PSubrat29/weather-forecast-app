@@ -1,7 +1,7 @@
 // Weather data access. Uses the FastAPI backend when VITE_API_URL is set,
 // otherwise calls the free, CORS-enabled Open-Meteo API directly from the browser.
 
-const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
+const API_BASE = (import.meta.env.VITE_API_URL || '').trim().replace(/[./]+$/, '');
 const FORECAST_URL = 'https://api.open-meteo.com/v1/forecast';
 const GEOCODE_URL = 'https://geocoding-api.open-meteo.com/v1/search';
 
