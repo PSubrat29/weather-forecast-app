@@ -1,0 +1,14 @@
+# Render Blueprint for the backend (Render → New → Blueprint → select this repository).
+services:
+  - type: web
+    name: weather-forecast-backend
+    runtime: python
+    plan: free
+    branch: main
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: ALLOWED_ORIGINS
+        value: https://psubrat29.github.io

@@ -21,7 +21,7 @@
       <div class="card current">
         <div>
           <h2>{{ place.label }}</h2>
-          <div class="muted">Updated {{ formatTime(data.current.time) }} (local time)</div>
+          <div class="muted">Updated {{ formatTime(data.current.time) }} (local time) · Source: <a :href="sourceInfo.url" target="_blank" rel="noopener">{{ sourceInfo.name }}</a></div>
         </div>
         <div class="now">
           <span class="icon">{{ currentDesc.icon }}</span>
@@ -38,13 +38,13 @@
 
       <div class="card">
         <h3>Next-hour temperature</h3>
-        <div v-if="modelState === 'training'" class="muted">Training model on the last 7 days of hourly data…</div>
+        <div v-if="modelState === 'training'" class="muted">Training model on hourly data…</div>
         <div v-else-if="modelState === 'error'" class="error">{{ modelError }}</div>
         <dl v-else-if="prediction" class="grid">
           <div><dt>TensorFlow.js model</dt><dd>{{ prediction.temperature.toFixed(1) }}°C</dd></div>
-          <div><dt>Open-Meteo forecast</dt><dd>{{ nextHourForecast !== null ? nextHourForecast.toFixed(1) + '°C' : '—' }}</dd></div>
+          <div><dt>{{ sourceInfo.name }} forecast</dt><dd>{{ nextHourForecast !== null ? nextHourForecast.toFixed(1) + '°C' : '—' }}</dd></div>
           <div><dt>Training error (RMSE)</dt><dd>±{{ prediction.rmse.toFixed(2) }}°C</dd></div>
-          <div><dt>Training samples</dt><dd>{{ prediction.samples }}</dd></div>
+          <div><dt>Training data</dt><dd>{{ prediction.samples }} hours ({{ prediction.basis }})</dd></div>
         </dl>
       </div>
 
@@ -85,6 +85,11 @@ const round = (v) => (typeof v === 'number' ? Math.round(v) : '—');
 const formatTime = (t) => t.replace('T', ' ');
 const compass = (deg) => ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][Math.round(deg / 45) % 8];
 
+const sourceInfo = computed(() =>
+  data.value.source === 'met-norway'
+    ? { name: 'MET Norway', url: 'https://api.met.no/' }
+    : { name: 'Open-Meteo', url: 'https://open-meteo.com/' }
+);
 const currentDesc = computed(() => describeCode(data.value.current.weather_code));
 
 const days = computed(() => {

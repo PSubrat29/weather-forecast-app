@@ -8,18 +8,22 @@ last 7 days of hourly observations.
 
 - **Frontend**: Vue 3 + Vite, deployed to GitHub Pages. Works on its own: it calls the free,
   key-less [Open-Meteo](https://open-meteo.com/) API directly from the browser.
-- **Backend (optional)**: FastAPI proxy for Open-Meteo (`/weather?latitude=..&longitude=..`).
-  When `VITE_API_URL` is set at build time the frontend uses it, and falls back to Open-Meteo
-  directly if the backend is down.
+- **Backend (optional)**: FastAPI API (`/weather?latitude=..&longitude=..`) returning data in the
+  Open-Meteo format. It uses Open-Meteo first and switches to [MET Norway](https://api.met.no/)
+  (also free, no key) when Open-Meteo rate-limits the server. When `VITE_API_URL` is set at build
+  time the frontend uses the backend, and falls back to Open-Meteo directly if the backend is down.
 
 ## Project structure
 ```
 weather-forecast-app/
 ├─ .github/workflows/ci.yml   # Build + test on every push; deploy to Pages from main
 ├─ backend/
-│  ├─ main.py                 # FastAPI app: /, /health, /weather
+│  ├─ main.py                 # FastAPI app: /, /health, /weather (Open-Meteo + MET Norway)
+│  ├─ test_main.py            # pytest suite (upstream APIs mocked)
 │  ├─ requirements.txt
 │  └─ Dockerfile
+├─ main.py, requirements.txt  # forward to backend/ for hosts that build from the repo root
+├─ render.yaml                # Render Blueprint for the backend
 ├─ frontend/
 │  ├─ index.html
 │  ├─ vite.config.js
@@ -74,22 +78,42 @@ docker compose up --build
    e.g. `https://your-backend.onrender.com`.
 
 ### Backend → Render (optional)
-1. Render → **New → Web Service** → connect `PSubrat29/weather-forecast-app`, branch `main`.
-2. Settings:
-   - Root Directory: `backend`
-   - Language: `Python 3` (version pinned to 3.12 by `.python-version`)
-   - Build Command: `pip install -r requirements.txt`
-   - Start Command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
-   - Health Check Path (under Advanced): `/health` — never `/weather`, which depends on Open-Meteo
-   - Environment variable `ALLOWED_ORIGINS=https://psubrat29.github.io` (optional; default `*`)
-3. Deploy, then check `<render-url>/health` returns `{"status":"ok","commit":"<deployed commit>"}`.
+Settings for the Render Web Service (also captured in `render.yaml`):
 
-The same build and start commands also work with Root Directory left empty: the root
-`requirements.txt` and `main.py` forward to `backend/`.
+| Setting | Value |
+|---|---|
+| Repository / Branch | `PSubrat29/weather-forecast-app` / `main` |
+| Root Directory | `backend` |
+| Language | `Python 3` (3.12, pinned by `backend/.python-version`) |
+| Build Command | `pip install -r requirements.txt` |
+| Start Command | `uvicorn main:app --host 0.0.0.0 --port $PORT` |
+| Health Check Path | `/health` |
+| Environment | `ALLOWED_ORIGINS=https://psubrat29.github.io` (optional; default `*`) |
 
-Open-Meteo rate-limits shared IPs (common on Render's free tier). The backend caches each
-location for 10 minutes, stops calling Open-Meteo for the `Retry-After` period after a 429, and
-the frontend falls back to Open-Meteo directly if the backend fails or takes over 10 seconds.
+`/health` never calls external APIs. Do not use `/weather` as the health check: it depends on
+third-party weather services.
+
+Check after deploying: `<render-url>/health` returns `{"status":"ok","commit":"<deployed commit>"}`
+and `<render-url>/weather` returns JSON with `"source": "open-meteo"` or `"source": "met-norway"`.
+
+## How the backend handles rate limits
+Open-Meteo limits requests per IP, and Render's free tier shares IPs between many apps, so
+Open-Meteo often answers Render with HTTP 429. The backend then:
+1. switches to MET Norway and converts its data to the same format;
+2. stops calling Open-Meteo for the `Retry-After` period (1 hour if none is given);
+3. caches each location for 10 minutes (`CACHE_TTL_SECONDS`);
+4. serves stale cached data if every source fails, and only then returns 502.
+
+The frontend waits at most 10 seconds for the backend, then calls Open-Meteo directly from the
+visitor's browser, so the website keeps working even if the backend is asleep or down.
+
+## Tests
+```bash
+cd backend
+pip install -r requirements-dev.txt
+pytest -q
+```
 
 ## Data
-Weather data by [Open-Meteo.com](https://open-meteo.com/), licensed CC BY 4.0.
+Weather data by [Open-Meteo.com](https://open-meteo.com/) and
+[MET Norway](https://api.met.no/), both licensed CC BY 4.0.

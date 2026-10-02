@@ -2,10 +2,13 @@
   <main class="container">
     <header>
       <h1>Weather Forecast Dashboard</h1>
-      <p class="sub">Live data from Open-Meteo · next-hour temperature model trained in your browser with TensorFlow.js</p>
+      <p class="sub">Live weather data · next-hour temperature model trained in your browser with TensorFlow.js</p>
     </header>
     <Weather />
-    <footer>Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a> (CC BY 4.0)</footer>
+    <footer>
+      Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a>
+      and <a href="https://api.met.no/" target="_blank" rel="noopener">MET Norway</a> (CC BY 4.0)
+    </footer>
   </main>
 </template>
 

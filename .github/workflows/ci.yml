@@ -19,18 +19,12 @@ jobs:
           python-version: '3.12'
       - name: Install dependencies
         working-directory: backend
-        run: pip install -r requirements.txt
-      - name: Smoke test
+        run: pip install -r requirements-dev.txt
+      - name: Run tests
         working-directory: backend
-        run: |
-          python -c "
-          from fastapi.testclient import TestClient
-          import main
-          c = TestClient(main.app)
-          assert c.get('/health').json()['status'] == 'ok'
-          assert c.get('/weather?latitude=100&longitude=0').status_code == 422
-          print('backend ok')
-          "
+        run: pytest -q
+      - name: Check root entry point (used when Render Root Directory is empty)
+        run: python -c "import main; assert main.app"
 
   frontend:
     runs-on: ubuntu-latest

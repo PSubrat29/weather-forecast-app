@@ -1,5 +1,5 @@
-// Small TensorFlow.js model trained in the browser on the last 7 days of hourly
-// observations to predict the temperature one hour ahead.
+// Small TensorFlow.js model trained in the browser on hourly data (the last 7 days of
+// observations when available) to predict the temperature one hour ahead.
 
 const FEATURES = ['temperature_2m', 'relative_humidity_2m', 'surface_pressure', 'wind_speed_10m'];
 
@@ -17,14 +17,20 @@ export async function predictNextHour(data) {
   const h = data.hourly;
   const now = Date.parse(data.current.time);
 
-  // Observed history only (hours up to now), dropping rows with missing values.
-  const rows = [];
-  for (let i = 0; i < h.time.length; i++) {
-    if (Date.parse(h.time[i]) > now) break;
-    const r = FEATURES.map((f) => h[f][i]);
-    if (r.every((v) => typeof v === 'number' && Number.isFinite(v))) rows.push(r);
+  const valid = (r) => r.every((v) => typeof v === 'number' && Number.isFinite(v));
+  const toRow = (i) => FEATURES.map((f) => h[f][i]);
+
+  // Prefer observed history (hours up to now). Sources without past data (MET Norway)
+  // only have forecast hours, so train on the hourly forecast series instead.
+  let rows = [];
+  for (let i = 0; i < h.time.length && Date.parse(h.time[i]) <= now; i++) rows.push(toRow(i));
+  rows = rows.filter(valid);
+  let basis = 'observed';
+  if (rows.length < 24) {
+    rows = h.time.map((_, i) => toRow(i)).filter(valid);
+    basis = 'forecast';
   }
-  if (rows.length < 24) throw new Error('Not enough history to train the model');
+  if (rows.length < 24) throw new Error('Not enough hourly data to train the model');
 
   const s = stats(rows);
   const norm = (r) => r.map((v, j) => (v - s[j].mean) / s[j].sd);
@@ -49,5 +55,5 @@ export async function predictNextHour(data) {
   tf.dispose([x, y, input, out]);
   model.dispose();
 
-  return { temperature: value, rmse: Math.sqrt(loss) * s[0].sd, samples: xs.length };
+  return { temperature: value, rmse: Math.sqrt(loss) * s[0].sd, samples: xs.length, basis };
 }
